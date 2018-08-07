@@ -1,0 +1,150 @@
+---
+title: "number_wins"
+author: "Stefan Gouyet"
+date: "6 août 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(shiny)
+library(leaflet)
+library(openxlsx)
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(ggiraph)
+library(readr)
+library(tidyr)
+library(tibble)
+
+df <- read_csv("results.csv")
+
+```
+
+
+
+```{r cars}
+
+df1 <- df %>% mutate(full_score = paste(home_team, " ", 
+                                        home_score, " - ", away_score, " ", away_team))
+
+df1 <- df1 %>% mutate(winner = ifelse(df$home_score > df$away_score, 
+                                      df$home_team, 
+                                      ifelse(df$away_score > df$home_score,
+                                             df$away_team,
+                                             "Draw")))
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+
+df1 <- df1 %>% filter(tournament == "FIFA World Cup")
+df1$year <- df1$date %>% year()
+
+df1 <- df1 %>% mutate(region = case_when(country %in% c("Uruguay",
+                                                        "Brazil",
+                                                        "Chile",
+                                                        "Argentina") ~ "South America",
+                                         country %in% c("Italy",
+                                                        "France",
+                                                        "Switzerland",
+                                                        "Sweden",
+                                                        "England",
+                                                        "Germany FR",
+                                                        "Spain",
+                                                        "Germany") ~ "Europe",
+                                         country %in% c("Mexico", 
+                                                        "USA") ~ "North America",
+                                         country %in% c("Korea Republic", 
+                                                        "Japan",
+                                                        "South Africa") ~ "Other")
+                      
+)
+
+
+#count                                                         
+win_count <- df1 %>% filter(winner %in% c("Belgium",
+                                          "Argentina","
+                                          France",
+                                          "Brazil",
+                                          "Germany",
+                                          "England",
+                                          "Uruguay",
+                                          "Italy",
+                                          "Spain",
+                                          "Netherlands"))
+
+
+```
+
+```{r}
+kelpdf <- data.frame(
+  Year = c(1999, 2000, 2004, 1999, 2004),
+  Taxon = c("Saccharina", "Saccharina", "Saccharina", "Agarum", "Agarum"),
+  Abundance = c(4,5,2,1,8)
+  
+)
+
+kelpdf %>% complete(Year, Taxon)
+
+win_count <- df1 %>% filter(winner %in% c("Belgium",
+                                          "Argentina","
+                                          France",
+                                          "Brazil",
+                                          "Germany",
+                                          "England",
+                                          "Uruguay",
+                                          "Italy",
+                                          "Spain",
+                                          "Netherlands",
+                                          "Switzerland",
+                                          "Chile",
+                                          "Poland",
+                                          "Russia",
+                                          "Sweden"))
+
+win_count <- win_count %>%
+  group_by(year,winner) %>% 
+  count()
+
+win_count <- as.tibble(win_count)
+
+win_count1 <- win_count %>% 
+  complete(year,winner)
+
+
+win_count <- df1 %>%
+  group_by(year,winner) %>% 
+  count()  %>%
+  group_by(winner) %>%
+  mutate(cs=cumsum(n))
+
+```
+
+```{r}
+
+saveGIF({
+for (i in 1930:2018) {
+    
+    year_games <- as.character(i)
+    
+    year_data <- win_count %>% filter(year == i)
+    
+   win_count %>% ggplot(aes(x = year_data,
+                         y = cs,
+                         frame = year)) + geom_bar(stat = "identity")
+
+   
+  
+    
+}
+  }, movie.name = 'world_cup_histogram.gif', interval = 0.5, ani.width = 700, ani.height = 600)
+
+
+
+```
+
