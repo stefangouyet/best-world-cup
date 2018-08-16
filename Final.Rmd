@@ -6,18 +6,12 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-library(shiny)
-library(leaflet)
-library(openxlsx)
-library(readxl)
 library(dplyr)
 library(ggplot2)
-library(ggiraph)
 library(readr)
-library(tidyr)
-library(tibble)
-
-df <- read_csv("results.csv")
+library(lubridate)
+library(animation)
+library(ggthemes)
 
 ```
 
@@ -25,124 +19,119 @@ df <- read_csv("results.csv")
 
 ```{r cars}
 
-df1 <- df %>% mutate(full_score = paste(home_team, " ", 
-                                        home_score, " - ", away_score, " ", away_team))
+df <- read_csv("results.csv")
 
-df1 <- df1 %>% mutate(winner = ifelse(df$home_score > df$away_score, 
-                                      df$home_team, 
-                                      ifelse(df$away_score > df$home_score,
-                                             df$away_team,
+
+world_cup <- df %>% 
+  filter(tournament == "FIFA World Cup")
+
+world_cup <- world_cup %>% mutate(winner = ifelse(world_cup$home_score > world_cup$away_score, 
+                                      world_cup$home_team, 
+                                      ifelse(world_cup$away_score > world_cup$home_score,
+                                             world_cup$away_team,
                                              "Draw")))
 
-```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-
-df1 <- df1 %>% filter(tournament == "FIFA World Cup")
-df1$year <- df1$date %>% year()
-
-df1 <- df1 %>% mutate(region = case_when(country %in% c("Uruguay",
-                                                        "Brazil",
-                                                        "Chile",
-                                                        "Argentina") ~ "South America",
-                                         country %in% c("Italy",
-                                                        "France",
-                                                        "Switzerland",
-                                                        "Sweden",
-                                                        "England",
-                                                        "Germany FR",
-                                                        "Spain",
-                                                        "Germany") ~ "Europe",
-                                         country %in% c("Mexico", 
-                                                        "USA") ~ "North America",
-                                         country %in% c("Korea Republic", 
-                                                        "Japan",
-                                                        "South Africa") ~ "Other")
-                      
-)
-
-
-#count                                                         
-win_count <- df1 %>% filter(winner %in% c("Belgium",
-                                          "Argentina","
-                                          France",
-                                          "Brazil",
-                                          "Germany",
-                                          "England",
-                                          "Uruguay",
-                                          "Italy",
-                                          "Spain",
-                                          "Netherlands"))
-
+world_cup$year <- world_cup$date %>% year()
 
 ```
 
-```{r}
-kelpdf <- data.frame(
-  Year = c(1999, 2000, 2004, 1999, 2004),
-  Taxon = c("Saccharina", "Saccharina", "Saccharina", "Agarum", "Agarum"),
-  Abundance = c(4,5,2,1,8)
+
+```{r pick best teams, echo=FALSE}
+
+best_nations_wc <- world_cup %>% count(winner, sort = TRUE) %>% filter(n>=20)
+
+```
+
+```{r filter top teams}
+
+top_teams <- world_cup %>% filter(winner %in% c( "Brazil",
+                                           "Germany",
+                                           "Italy",
+                                           "Argentina",
+                                           "France",
+                                           "Spain",
+                                           "England",
+                                           "Netherlands",
+                                           "Uruguay" ))
   
-)
-
-kelpdf %>% complete(Year, Taxon)
-
-win_count <- df1 %>% filter(winner %in% c("Belgium",
-                                          "Argentina","
-                                          France",
-                                          "Brazil",
-                                          "Germany",
-                                          "England",
-                                          "Uruguay",
-                                          "Italy",
-                                          "Spain",
-                                          "Netherlands",
-                                          "Switzerland",
-                                          "Chile",
-                                          "Poland",
-                                          "Russia",
-                                          "Sweden"))
-
-win_count <- win_count %>%
-  group_by(year,winner) %>% 
-  count()
-
-win_count <- as.tibble(win_count)
-
-win_count1 <- win_count %>% 
-  complete(year,winner)
+  
+  
+  #"Belgium",
+  #"Switzerland",
+ #"Chile",
+ #"Poland",
+#"Russia",
+#"Sweden",
+#"Hungary"))
 
 
-win_count <- df1 %>%
-  group_by(year,winner) %>% 
-  count()  %>%
+top_teams <- top_teams %>% 
+  group_by(year, winner) %>%
+  count() %>%
+  ungroup() %>%
+  complete(year,winner, fill = list(n=0))
+
+#create cumulative sum variable, grouped by winner
+top_teams <- top_teams %>%
   group_by(winner) %>%
   mutate(cs=cumsum(n))
 
 ```
 
-```{r}
+```{r create ggplot and save gif}
 
+i <- 1930
 saveGIF({
-for (i in 1930:2018) {
+for (i in c(1930,1934,1938,1950,1954,1958,1962,1966,1970,1974,1978,1982,1986,1990,1994,1998,2002,2006,2010,2014,2018)) {
     
     year_games <- as.character(i)
     
-    year_data <- win_count %>% filter(year == i)
+    year_data <- top_teams %>% filter(year == i)
     
-   win_count %>% ggplot(aes(x = year_data,
+   gg <- year_data %>% ggplot(aes(x = winner,
                          y = cs,
-                         frame = year)) + geom_bar(stat = "identity")
+                         frame = year,
+                         group = winner,
+                         fill = winner)) +
+     xlim(c("Brazil",
+            "Germany",
+            "Italy",
+            "Argentina",
+            "France",
+            "Spain",
+            "England",
+            "Netherlands" ,
+            "Uruguay" )) +
+     ylim(0,75) +
+     geom_bar(stat = "identity")+
+     ggtitle(paste0("Number of Victories at the FIFA World Cup (1930 - ",year_games,")")) +
+     scale_colour_brewer(palette = "Set1") +
+     labs(x = "", y = "Cumulative Wins")+
+     theme_dark()+
+     guides(fill=FALSE) +
+     theme(panel.grid.major = element_blank(), 
+           panel.grid.minor = element_blank(),
+           plot.title = element_text(hjust = 0.5, face = "bold", size = 18),
+           axis.text.x = element_text(face = "bold", size = 14),
+           axis.title.y =  element_text(face = "bold", size = 14),
+           axis.text.y = element_text(face = "bold", size = 14)) +
+     scale_fill_manual(values = c("Brazil" = "yellow1",
+                                                                       "Germany" = "gray8",
+                                                                       "Italy" = "#007FFF",
+                                                                       "Argentina" = "lightblue",
+                                                                       "France" = "darkblue",
+                                                                       "Spain"= "darkred",
+                                                                       "England" = "white",
+                                                                       "Netherlands" = "darkorange",
+                                                                       "Uruguay" = "dodgerblue2")) 
+   
+   print(gg)
 
    
   
     
 }
-  }, movie.name = 'world_cup_histogram.gif', interval = 0.5, ani.width = 700, ani.height = 600)
+  }, movie.name = 'world_cup_histogram.gif', interval = 0.8, ani.width = 1500, ani.height = 900)
 
 
 
