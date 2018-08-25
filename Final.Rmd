@@ -7,6 +7,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 library(dplyr)
+library(tidyverse)
 library(ggplot2)
 library(readr)
 library(lubridate)
@@ -78,61 +79,58 @@ top_teams <- top_teams %>%
 
 ```
 
-```{r create ggplot and save gif}
 
+
+```{r create ggplot and save gif}
 i <- 1930
 saveGIF({
-for (i in c(1930,1934,1938,1950,1954,1958,1962,1966,1970,1974,1978,1982,1986,1990,1994,1998,2002,2006,2010,2014,2018)) {
+  for (i in c(1930,1934,1938,1950,1954,1958,1962,1966,1970,1974,1978,1982,1986,1990,1994,1998,2002,2006,2010,2014,2018)) {
     
     year_games <- as.character(i)
     
     year_data <- top_teams %>% filter(year == i)
     
-   gg <- year_data %>% ggplot(aes(x = winner,
-                         y = cs,
-                         frame = year,
-                         group = winner,
-                         fill = winner)) +
-     xlim(c("Brazil",
-            "Germany",
-            "Italy",
-            "Argentina",
-            "France",
-            "Spain",
-            "England",
-            "Netherlands" ,
-            "Uruguay" )) +
-     ylim(0,75) +
-     geom_bar(stat = "identity")+
-     ggtitle(paste0("Number of Victories at the FIFA World Cup (1930 - ",year_games,")")) +
-     scale_colour_brewer(palette = "Set1") +
-     labs(x = "", y = "Cumulative Wins")+
-     theme_dark()+
-     guides(fill=FALSE) +
-     theme(panel.grid.major = element_blank(), 
-           panel.grid.minor = element_blank(),
-           plot.title = element_text(hjust = 0.5, face = "bold", size = 18),
-           axis.text.x = element_text(face = "bold", size = 14),
-           axis.title.y =  element_text(face = "bold", size = 14),
-           axis.text.y = element_text(face = "bold", size = 14)) +
-     scale_fill_manual(values = c("Brazil" = "yellow1",
-                                                                       "Germany" = "gray8",
-                                                                       "Italy" = "#007FFF",
-                                                                       "Argentina" = "lightblue",
-                                                                       "France" = "darkblue",
-                                                                       "Spain"= "darkred",
-                                                                       "England" = "white",
-                                                                       "Netherlands" = "darkorange",
-                                                                       "Uruguay" = "dodgerblue2")) 
-   
-   print(gg)
-
-   
-  
+    gg <- year_data %>% ggplot(aes(x = winner,
+                                   y = cs,
+                                   frame = year,
+                                   group = winner,
+                                   fill = winner)) +
+      xlim(c("Brazil",
+             "Germany",
+             "Italy",
+             "Argentina",
+             "France",
+             "Spain",
+             "England",
+             "Netherlands" ,
+             "Uruguay" )) +
+      ylim(0,75) +
+      geom_bar(stat = "identity")+
+      ggtitle(paste0("Number of Victories at the FIFA World Cup (1930 - ",year_games,")")) +
+      scale_colour_brewer(palette = "Set1") +
+      labs(x = "", y = "Cumulative Wins")+
+      theme_dark()+
+      guides(fill=FALSE) +
+      theme_economist(base_size = 16) +
+      theme(plot.title = element_text(hjust = 0.5))+
+      scale_fill_manual(values = c("Brazil" = "yellow1",
+                                   "Germany" = "gray8",
+                                   "Italy" = "#007FFF",
+                                   "Argentina" = "lightblue",
+                                   "France" = "darkblue",
+                                   "Spain"= "darkred",
+                                   "England" = "white",
+                                   "Netherlands" = "darkorange",
+                                   "Uruguay" = "dodgerblue2")) 
     
-}
-  }, movie.name = 'world_cup_histogram.gif', interval = 0.8, ani.width = 1500, ani.height = 900)
-
+    print(gg)
+    
+    
+    
+    
+  }
+  
+}, movie.name = 'best_world_cup_wordpress.gif', interval = 0.3, ani.width = 900, ani.height = 700)
 
 
 ```
